@@ -1,35 +1,28 @@
-# Comments Unthreaded - Jira Activity Tab
+# Comments Unthreaded - Simple Jira Activity Tab
 
-A hacky Jira Forge app that provides an enhanced, unthreaded view of issue comments with advanced filtering, search, and analytics capabilities.
+A hacky Jira Forge app that provides an unthreaded view of issue comments.
 
 Inspired by Brian Stinar's comment on [JRACLOUD-93678 - Ability to configure Threaded Comments in Jira](https://jira.atlassian.com/browse/JRACLOUD-93678?focusedId=3720932&page=com.atlassian.jira.plugin.system.issuetabpanels%3Acomment-tabpanel#comment-3720932)
 
 Written by [Rovo Dev CLI](https://community.atlassian.com/forums/Rovo-for-Software-Teams-Beta/Introducing-Rovo-Dev-CLI-AI-Powered-Development-in-your-terminal/ba-p/3043623) with [Forge MCP Server](https://developer.atlassian.com/platform/forge/forge-mcp/)
 
-**NOTE: This is the "Deluxe" version. You might want the [Simple version](https://bitbucket.org/rudebadmood/unthreaded/src/simple/)** if you don't need filtering, searching, and analytics.
+**NOTE: This is the "Simple" version. If you like bells and whistles (filtering, search, analytics), you should check out the [Deluxe version](https://bitbucket.org/rudebadmood/unthreaded/src/simple/)**
 
 ### Screenshot
-![Deluxe Comments Unthreaded](comments-unthreaded-deluxe.png)
+![Comments Unthreaded](comments-unthreaded-simple.png)
 
 ## Features
 
 ### Core Functionality
 - **Unthreaded Comments View**: Display all issue comments in a clean, chronological list without threading complexity
-- **Smart Search**: Search across comment content, author names, and rendered HTML content with highlighting
-- **Advanced Filtering**: Filter comments by author, date range, and search terms
-- **Flexible Sorting**: Toggle between chronological (oldest first) and reverse chronological (newest first) ordering
-
-### Analytics & Statistics
-- **Comment Statistics**: View total comments, word counts, and average words per comment
-- **Author Analytics**: See most active commenters and comment distribution
-- **Real-time Filtering**: All statistics update dynamically based on active filters
+- **Simple Sorting**: Toggle between chronological (oldest first) and reverse chronological (newest first) ordering
+- **Clean Display**: Each comment shows the author, timestamp, and content in an easy-to-read format
 
 ### User Experience
-- **Collapsible Panels**: Expandable statistics and filter sections to reduce clutter
-- **Search Highlighting**: Search terms are highlighted in comment content
-- **Formatted Content**: Proper rendering of Atlassian Document Format (ADF) content
+- **Minimal Interface**: No clutter - just comments displayed clearly
 - **User Avatars**: Display comment authors with proper user components
 - **Error Handling**: Graceful error states and loading indicators
+- **Responsive Design**: Uses Atlassian Design System components for consistent styling
 
 ## Setup and Deployment
 
@@ -63,9 +56,8 @@ Written by [Rovo Dev CLI](https://community.atlassian.com/forums/Rovo-for-Softwa
 This app adds a "Comments Unthreaded" tab to the Activity section of Jira issues. Unlike the default threaded comment view, this provides:
 
 - **Linear Timeline**: All comments displayed in a single, easy-to-scan list
-- **Enhanced Search**: Find specific comments or authors quickly
-- **Content Analysis**: Understand comment patterns and author participation
-- **Better Navigation**: No nested threads - just a clean chronological flow
+- **Simple Navigation**: No nested threads - just a clean chronological flow
+- **Quick Overview**: See total comment count and easily switch between oldest/newest first
 
 ## Technical Architecture
 
@@ -76,9 +68,8 @@ This app adds a "Comments Unthreaded" tab to the Activity section of Jira issues
 
 ### Frontend (`src/frontend/index.jsx`)
 - **React Components**: Built with Forge UI Kit components for consistent Atlassian design
-- **State Management**: Complex state handling for filters, search, and UI controls
-- **Performance Optimization**: Uses React's useMemo for expensive filtering and calculations
-- **ADF Processing**: Custom functions to extract and format Atlassian Document Format content
+- **Simple State Management**: Basic state handling for comments, loading, and sort order
+- **ADF Processing**: Simple function to extract text content from Atlassian Document Format
 
 ## File Structure
 
@@ -95,6 +86,6 @@ The app requires:
 ## Use Cases
 
 - **Long Discussion Threads**: Simplify navigation through extensive comment histories
-- **Comment Analysis**: Research team communication patterns and participation
-- **Content Search**: Quickly find specific information mentioned in comments
-- **Timeline Review**: Understand the chronological flow of issue discussions
+- **Timeline Review**: Understand the chronological flow of issue discussions without threading complexity
+- **Quick Overview**: Get a simple count and clean view of all comments on an issue
+- **Better Readability**: Focus on content without the distraction of nested thread structures
