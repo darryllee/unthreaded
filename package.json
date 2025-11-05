@@ -1,7 +1,7 @@
 {
-  "name": "hello-world-jira-activity",
+  "name": "unthreaded-comments",
   "version": "1.0.0",
-  "description": "A Hello World Jira Forge app with Activity tab",
+  "description": "A Jira Forge app that provides an enhanced, unthreaded view of issue comments with advanced filtering, search, and analytics capabilities",
   "main": "src/index.js",
   "scripts": {
     "build": "forge build",
@@ -17,6 +17,6 @@
     "react-dom": "^18.2.0"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.0.0"
   }
 }

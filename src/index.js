@@ -7,21 +7,58 @@ const resolver = new Resolver();
 resolver.define('getIssueComments', async (req) => {
   const { issueKey, sortOrder = 'created' } = req.payload;
   
+  // Input validation
+  if (!issueKey || typeof issueKey !== 'string') {
+    return {
+      success: false,
+      error: 'Invalid issue key provided',
+      comments: [],
+      total: 0
+    };
+  }
+  
   try {
-    // Fetch comments using Jira REST API
-    const response = await api.asApp().requestJira(route`/rest/api/3/issue/${issueKey}/comment?orderBy=${sortOrder}&expand=renderedBody`);
-    const data = await response.json();
+    // Fetch all comments with pagination support
+    const allComments = [];
+    let startAt = 0;
+    const maxResults = 100;
+    let total = 0;
+    let hasMore = true;
+    
+    while (hasMore) {
+      const url = route`/rest/api/3/issue/${issueKey}/comment?orderBy=${sortOrder}&expand=renderedBody&startAt=${startAt}&maxResults=${maxResults}`;
+      const response = await api.asApp().requestJira(url);
+      
+      // Check HTTP status
+      if (!response.ok) {
+        const errorText = await response.text().catch(() => 'Unknown error');
+        throw new Error(`Jira API returned ${response.status}: ${errorText}`);
+      }
+      
+      const data = await response.json();
+      const pageComments = data.comments || [];
+      allComments.push(...pageComments);
+      
+      total = data.total || allComments.length;
+      
+      // Check if we've fetched all comments
+      if (allComments.length >= total || pageComments.length < maxResults) {
+        hasMore = false;
+      } else {
+        startAt += maxResults;
+      }
+    }
     
     return {
       success: true,
-      comments: data.comments || [],
-      total: data.total || 0
+      comments: allComments,
+      total: total
     };
   } catch (error) {
     console.error('Error fetching comments:', error);
     return {
       success: false,
-      error: error.message,
+      error: error.message || 'Failed to fetch comments',
       comments: [],
       total: 0
     };

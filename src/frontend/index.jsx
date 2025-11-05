@@ -9,13 +9,11 @@ import ForgeReconciler, {
   Inline,
   Box,
   User,
-  DynamicTable,
   ButtonGroup,
   SectionMessage,
   Textfield,
   Select,
   DatePicker,
-  Badge,
   Heading,
   xcss
 } from '@forge/react';
@@ -40,14 +38,24 @@ const CommentsList = () => {
   const [total, setTotal] = useState(0);
   
   // Filter and search states
+  const [searchTermInput, setSearchTermInput] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAuthor, setSelectedAuthor] = useState('all');
-  const [dateFrom, setDateFrom] = useState('');
-  const [dateTo, setDateTo] = useState('');
+  const [dateFrom, setDateFrom] = useState(null);
+  const [dateTo, setDateTo] = useState(null);
   
   // Collapsible panel states
   const [showStats, setShowStats] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+
+  // Debounce search input
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchTerm(searchTermInput.trim());
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchTermInput]);
 
   // Get issue context on component mount
   useEffect(() => {
@@ -104,16 +112,15 @@ const CommentsList = () => {
   };
 
   const formatDate = (dateString) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric'
-    }) + ' at ' + date.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true
-    });
+    try {
+      const date = new Date(dateString);
+      return new Intl.DateTimeFormat(undefined, {
+        dateStyle: 'medium',
+        timeStyle: 'short'
+      }).format(date);
+    } catch (e) {
+      return dateString;
+    }
   };
 
   const extractTextFromAdf = (adfContent) => {
@@ -140,7 +147,7 @@ const CommentsList = () => {
   };
 
   const formatTextWithFormatting = (adfContent) => {
-    if (!adfContent || !adfContent.content) return '';
+    if (!adfContent || !adfContent.content) return null;
     
     let elements = [];
     let key = 0;
@@ -151,30 +158,47 @@ const CommentsList = () => {
         
         // Highlight search terms
         if (searchTerm && text.toLowerCase().includes(searchTerm.toLowerCase())) {
-          const regex = new RegExp(`(${searchTerm})`, 'gi');
+          const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
           const parts = text.split(regex);
-          return parts.map((part, index) => {
+          const highlightedParts = parts.map((part, index) => {
             if (part.toLowerCase() === searchTerm.toLowerCase()) {
               return <Strong key={`${key++}-${index}`}>{part}</Strong>;
             }
-            return part;
+            return <Text key={`${key++}-${index}`}>{part}</Text>;
           });
+          
+          // Apply text formatting to highlighted parts
+          if (node.marks && node.marks.length > 0) {
+            return node.marks.reduce((acc, mark) => {
+              if (mark.type === 'strong') {
+                return <Strong key={key++}>{acc}</Strong>;
+              } else if (mark.type === 'em') {
+                return <Text key={key++} appearance="subtle">{acc}</Text>;
+              } else if (mark.type === 'code') {
+                return <Text key={key++} appearance="subtle">{acc}</Text>;
+              }
+              return acc;
+            }, <>{highlightedParts}</>);
+          }
+          return <>{highlightedParts}</>;
         }
         
-        // Apply text formatting
+        // Apply text formatting without highlighting
+        let formattedText = text;
         if (node.marks) {
-          node.marks.forEach(mark => {
+          formattedText = node.marks.reduce((acc, mark) => {
             if (mark.type === 'strong') {
-              text = <Strong key={key++}>{text}</Strong>;
+              return <Strong key={key++}>{acc}</Strong>;
             } else if (mark.type === 'em') {
-              text = <Text key={key++} appearance="subtle">{text}</Text>;
+              return <Text key={key++} appearance="subtle">{acc}</Text>;
             } else if (mark.type === 'code') {
-              text = <Text key={key++} appearance="subtle">{text}</Text>;
+              return <Text key={key++} appearance="subtle">{acc}</Text>;
             }
-          });
+            return acc;
+          }, text);
         }
         
-        return text;
+        return formattedText;
       } else if (node.type === 'hardBreak') {
         return <Text key={key++}>{'\n'}</Text>;
       } else if (node.type === 'paragraph') {
@@ -189,7 +213,7 @@ const CommentsList = () => {
     };
     
     adfContent.content.forEach(processNode);
-    return elements.length > 0 ? elements : extractTextFromAdf(adfContent);
+    return elements.length > 0 ? elements : null;
   };
 
   // Get unique authors for filter dropdown
@@ -233,6 +257,7 @@ const CommentsList = () => {
       const commentDate = new Date(comment.created);
       if (dateFrom) {
         const fromDate = new Date(dateFrom);
+        fromDate.setHours(0, 0, 0, 0);
         if (commentDate < fromDate) return false;
       }
       if (dateTo) {
@@ -340,7 +365,7 @@ const CommentsList = () => {
             >
               {showFilters ? 'Hide' : 'Show'}
             </Button>
-            {(searchTerm || selectedAuthor !== 'all' || dateFrom || dateTo) && (
+            {(searchTermInput || selectedAuthor !== 'all' || dateFrom || dateTo) && (
               <Text size="small" appearance="subtle">
                 (filters active)
               </Text>
@@ -353,8 +378,8 @@ const CommentsList = () => {
               <Textfield
                 name="search"
                 placeholder="Search comments, authors, or content..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
+                value={searchTermInput}
+                onChange={(e) => setSearchTermInput(e.target.value)}
               />
               
               {/* Filter Controls */}
@@ -378,19 +403,17 @@ const CommentsList = () => {
                 {/* Date Range */}
                 <Stack space="space.050">
                   <Text size="small"><Strong>From Date</Strong></Text>
-                  <Textfield
-                    type="date"
+                  <DatePicker
                     value={dateFrom}
-                    onChange={(e) => setDateFrom(e.target.value)}
+                    onChange={(date) => setDateFrom(date)}
                   />
                 </Stack>
                 
                 <Stack space="space.050">
                   <Text size="small"><Strong>To Date</Strong></Text>
-                  <Textfield
-                    type="date"
+                  <DatePicker
                     value={dateTo}
-                    onChange={(e) => setDateTo(e.target.value)}
+                    onChange={(date) => setDateTo(date)}
                   />
                 </Stack>
 
@@ -398,10 +421,11 @@ const CommentsList = () => {
                 <Button
                   appearance="subtle"
                   onClick={() => {
+                    setSearchTermInput('');
                     setSearchTerm('');
                     setSelectedAuthor('all');
-                    setDateFrom('');
-                    setDateTo('');
+                    setDateFrom(null);
+                    setDateTo(null);
                   }}
                 >
                   Clear All
@@ -436,7 +460,7 @@ const CommentsList = () => {
       </Stack>
 
       {/* Comments list */}
-      {comments.map((comment, index) => (
+      {filteredComments.map((comment, index) => (
         <Stack key={comment.id} space="space.200">
           {/* Comment header - author and date on same line */}
           <Inline space="space.100" alignBlock="start">
@@ -444,15 +468,15 @@ const CommentsList = () => {
             <Text>added a comment - {formatDate(comment.created)}</Text>
           </Inline>
 
-          {/* Comment content */}
+          {/* Comment content with formatting and search highlighting */}
           <Box>
-            <Text>
-              {extractTextFromAdf(comment.body) || 'No content'}
-            </Text>
+            {formatTextWithFormatting(comment.body) || (
+              <Text>{extractTextFromAdf(comment.body) || 'No content'}</Text>
+            )}
           </Box>
           
           {/* Add separator after each comment except the last one */}
-          {index < comments.length - 1 && (
+          {index < filteredComments.length - 1 && (
             <Box
               xcss={xcss({
                 borderBottom: '1px solid',
