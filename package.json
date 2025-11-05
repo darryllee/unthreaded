@@ -1,0 +1,22 @@
+{
+  "name": "hello-world-jira-activity",
+  "version": "1.0.0",
+  "description": "A Hello World Jira Forge app with Activity tab",
+  "main": "src/index.js",
+  "scripts": {
+    "build": "forge build",
+    "deploy": "forge deploy",
+    "tunnel": "forge tunnel"
+  },
+  "dependencies": {
+    "@forge/api": "^3.0.0",
+    "@forge/bridge": "^3.0.0",
+    "@forge/react": "^10.0.0",
+    "@forge/resolver": "^1.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

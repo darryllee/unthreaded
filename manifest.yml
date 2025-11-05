@@ -1,0 +1,25 @@
+modules:
+  jira:issueActivity:
+    - key: unthreaded-comments
+      resource: main
+      render: native
+      resolver:
+        function: resolver
+      title: Comments Unthreaded
+  
+  function:
+    - key: resolver
+      handler: index.handler
+
+resources:
+  - key: main
+    path: src/frontend/index.jsx
+
+app:
+  runtime:
+    name: nodejs20.x
+  id: ari:cloud:ecosystem::app/YOURAPPID
+
+permissions:
+  scopes:
+    - read:jira-work

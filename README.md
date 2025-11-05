@@ -1,0 +1,100 @@
+# Comments Unthreaded - Jira Activity Tab
+
+A hacky Jira Forge app that provides an enhanced, unthreaded view of issue comments with advanced filtering, search, and analytics capabilities.
+
+Inspired by Brian Stinar's comment on [JRACLOUD-93678 - Ability to configure Threaded Comments in Jira](https://jira.atlassian.com/browse/JRACLOUD-93678?focusedId=3720932&page=com.atlassian.jira.plugin.system.issuetabpanels%3Acomment-tabpanel#comment-3720932)
+
+Written by [Rovo Dev CLI](https://community.atlassian.com/forums/Rovo-for-Software-Teams-Beta/Introducing-Rovo-Dev-CLI-AI-Powered-Development-in-your-terminal/ba-p/3043623) with [Forge MCP Server](https://developer.atlassian.com/platform/forge/forge-mcp/)
+
+**NOTE: This is the "Deluxe" version. You might want the [Simple version](https://bitbucket.org/rudebadmood/unthreaded/src/simple/)** if you don't need filtering, searching, and analytics.
+
+### Screenshot
+![Deluxe Comments Unthreaded](comments-unthreaded-deluxe.png)
+
+## Features
+
+### Core Functionality
+- **Unthreaded Comments View**: Display all issue comments in a clean, chronological list without threading complexity
+- **Smart Search**: Search across comment content, author names, and rendered HTML content with highlighting
+- **Advanced Filtering**: Filter comments by author, date range, and search terms
+- **Flexible Sorting**: Toggle between chronological (oldest first) and reverse chronological (newest first) ordering
+
+### Analytics & Statistics
+- **Comment Statistics**: View total comments, word counts, and average words per comment
+- **Author Analytics**: See most active commenters and comment distribution
+- **Real-time Filtering**: All statistics update dynamically based on active filters
+
+### User Experience
+- **Collapsible Panels**: Expandable statistics and filter sections to reduce clutter
+- **Search Highlighting**: Search terms are highlighted in comment content
+- **Formatted Content**: Proper rendering of Atlassian Document Format (ADF) content
+- **User Avatars**: Display comment authors with proper user components
+- **Error Handling**: Graceful error states and loading indicators
+
+## Setup and Deployment
+
+1. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+2. Register the app:
+   ```bash
+   forge register 'Unthreaded Comments'
+   ```
+
+3. Build the app:
+   ```bash
+   forge build
+   ```
+
+4. Deploy the app:
+   ```bash
+   forge deploy
+   ```
+
+5. Install the app to your Jira site:
+   ```bash
+   forge install
+   ```
+
+## How It Works
+
+This app adds a "Comments Unthreaded" tab to the Activity section of Jira issues. Unlike the default threaded comment view, this provides:
+
+- **Linear Timeline**: All comments displayed in a single, easy-to-scan list
+- **Enhanced Search**: Find specific comments or authors quickly
+- **Content Analysis**: Understand comment patterns and author participation
+- **Better Navigation**: No nested threads - just a clean chronological flow
+
+## Technical Architecture
+
+### Backend (`src/index.js`)
+- **Resolver Functions**: Two main resolvers for fetching comments and issue context
+- **Jira API Integration**: Uses Jira REST API v3 to fetch comment data with proper ordering
+- **Error Handling**: Comprehensive error handling with detailed error responses
+
+### Frontend (`src/frontend/index.jsx`)
+- **React Components**: Built with Forge UI Kit components for consistent Atlassian design
+- **State Management**: Complex state handling for filters, search, and UI controls
+- **Performance Optimization**: Uses React's useMemo for expensive filtering and calculations
+- **ADF Processing**: Custom functions to extract and format Atlassian Document Format content
+
+## File Structure
+
+- `manifest.yml` - Forge app configuration defining the jira:issueActivity module
+- `src/index.js` - Backend resolver functions for API calls
+- `src/frontend/index.jsx` - React frontend with comment display and filtering logic
+- `package.json` - Dependencies including Forge React, API, and Bridge packages
+
+## Permissions
+
+The app requires:
+- `read:jira-work` - To access issue comments and metadata
+
+## Use Cases
+
+- **Long Discussion Threads**: Simplify navigation through extensive comment histories
+- **Comment Analysis**: Research team communication patterns and participation
+- **Content Search**: Quickly find specific information mentioned in comments
+- **Timeline Review**: Understand the chronological flow of issue discussions
