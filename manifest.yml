@@ -17,7 +17,7 @@ resources:
 
 app:
   runtime:
-    name: nodejs20.x
+    name: nodejs22.x
   id: ari:cloud:ecosystem::app/YOURAPPID
 
 permissions:
