@@ -6,7 +6,7 @@ Inspired by Brian Stinar's comment on [JRACLOUD-93678 - Ability to configure Thr
 
 Written by [Rovo Dev CLI](https://community.atlassian.com/forums/Rovo-for-Software-Teams-Beta/Introducing-Rovo-Dev-CLI-AI-Powered-Development-in-your-terminal/ba-p/3043623) with [Forge MCP Server](https://developer.atlassian.com/platform/forge/forge-mcp/)
 
-**NOTE: This is the "Simple" version. If you like bells and whistles (filtering, search, analytics), you should check out the [Deluxe version](https://bitbucket.org/rudebadmood/unthreaded/src/simple/)**
+**NOTE: This is the "Simple" version. If you like bells and whistles (filtering, search, analytics), you should check out the [Deluxe version](https://github.com/darryllee/unthreaded)**
 
 ### Screenshot
 ![Comments Unthreaded](comments-unthreaded-simple.png)
