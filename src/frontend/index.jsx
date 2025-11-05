@@ -74,18 +74,23 @@ const CommentsList = () => {
     setSortOrder(current => current === 'created' ? '-created' : 'created');
   };
 
+
+  // Improved date formatting with Intl.DateTimeFormat
   const formatDate = (dateString) => {
     const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
+    const dateFormatter = new Intl.DateTimeFormat('en-US', {
       year: 'numeric',
       month: 'long',
       day: 'numeric'
-    }) + ' at ' + date.toLocaleTimeString('en-US', {
+    });
+    const timeFormatter = new Intl.DateTimeFormat('en-US', {
       hour: 'numeric',
       minute: '2-digit',
       hour12: true
     });
+    return `${dateFormatter.format(date)} at ${timeFormatter.format(date)}`;
   };
+
 
   const extractTextFromAdf = (adfContent) => {
     if (!adfContent || !adfContent.content) return '';
@@ -109,6 +114,7 @@ const CommentsList = () => {
     adfContent.content.forEach(extractText);
     return text.trim();
   };
+
 
   if (loading) {
     return (
@@ -138,7 +144,7 @@ const CommentsList = () => {
 
   return (
     <Stack space="space.300">
-      {/* Simple header with sort control */}
+      {/* Header with sort control */}
       <Inline space="space.200" alignBlock="center" spread="space-between">
         <Text><Strong>{comments.length}</Strong> comments</Text>
         <Button 
@@ -150,34 +156,37 @@ const CommentsList = () => {
       </Inline>
 
       {/* Comments list */}
-      {comments.map((comment, index) => (
-        <Stack key={comment.id} space="space.200">
-          {/* Comment header - author and date on same line */}
-          <Inline space="space.100" alignBlock="start">
-            <User accountId={comment.author?.accountId} />
-            <Text>added a comment - {formatDate(comment.created)}</Text>
-          </Inline>
+      {comments.map((comment, index) => {
+        const commentText = extractTextFromAdf(comment.body);
+        return (
+          <Stack key={comment.id} space="space.200">
+            {/* Comment header - author and date on same line */}
+            <Inline space="space.100" alignBlock="start">
+              <User accountId={comment.author?.accountId} />
+              <Text>added a comment - {formatDate(comment.created)}</Text>
+            </Inline>
 
-          {/* Comment content */}
-          <Box>
-            <Text>
-              {extractTextFromAdf(comment.body) || 'No content'}
-            </Text>
-          </Box>
-          
-          {/* Add separator after each comment except the last one */}
-          {index < comments.length - 1 && (
-            <Box
-              xcss={xcss({
-                borderBottom: '1px solid',
-                borderColor: 'color.border',
-                borderStyle: 'solid',
-                marginTop: 'space.200'
-              })}
-            />
-          )}
-        </Stack>
-      ))}
+            {/* Comment content with formatting */}
+            <Box>
+              <Text>
+                {commentText || 'No content'}
+              </Text>
+            </Box>
+            
+            {/* Add separator after each comment except the last one */}
+            {index < comments.length - 1 && (
+              <Box
+                xcss={xcss({
+                  borderBottom: '1px solid',
+                  borderColor: 'color.border',
+                  borderStyle: 'solid',
+                  marginTop: 'space.200'
+                })}
+              />
+            )}
+          </Stack>
+        );
+      })}
     </Stack>
   );
 };

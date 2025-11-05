@@ -18,7 +18,7 @@ resources:
 app:
   runtime:
     name: nodejs22.x
-  id: ari:cloud:ecosystem::app/YOURAPPID
+  id: ari:cloud:ecosystem::app/1372b81c-dc59-4872-aa30-8b05cea3456d
 
 permissions:
   scopes:
