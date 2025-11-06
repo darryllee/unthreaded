@@ -10,6 +10,7 @@ import ForgeReconciler, {
   Box,
   User,
   SectionMessage,
+  AdfRenderer,
   xcss
 } from '@forge/react';
 import { invoke } from '@forge/bridge';
@@ -116,6 +117,7 @@ const CommentsList = () => {
   };
 
 
+
   if (loading) {
     return (
       <Stack space="space.200" alignInline="center">
@@ -166,11 +168,13 @@ const CommentsList = () => {
               <Text>added a comment - {formatDate(comment.created)}</Text>
             </Inline>
 
-            {/* Comment content with formatting */}
+            {/* Comment content with ADF rendering */}
             <Box>
-              <Text>
-                {commentText || 'No content'}
-              </Text>
+              {comment.body && comment.body.content ? (
+                <AdfRenderer document={comment.body} />
+              ) : (
+                <Text>{commentText || 'No content'}</Text>
+              )}
             </Box>
             
             {/* Add separator after each comment except the last one */}
