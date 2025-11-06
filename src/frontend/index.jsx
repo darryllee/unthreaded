@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useReducer, useEffect, useMemo } from 'react';
 import ForgeReconciler, { 
   Text, 
   Button, 
@@ -30,32 +30,151 @@ const cardStyle = xcss({
   marginBottom: 'space.100'
 });
 
+// Action types
+const ACTIONS = {
+  SET_LOADING: 'SET_LOADING',
+  SET_LOADING_MORE: 'SET_LOADING_MORE',
+  SET_COMMENTS: 'SET_COMMENTS',
+  ADD_COMMENTS: 'ADD_COMMENTS',
+  SET_ERROR: 'SET_ERROR',
+  SET_ISSUE_KEY: 'SET_ISSUE_KEY',
+  SET_SORT_ORDER: 'SET_SORT_ORDER',
+  SET_SEARCH_INPUT: 'SET_SEARCH_INPUT',
+  SET_SEARCH_TERM: 'SET_SEARCH_TERM',
+  SET_AUTHOR_FILTER: 'SET_AUTHOR_FILTER',
+  SET_DATE_FROM: 'SET_DATE_FROM',
+  SET_DATE_TO: 'SET_DATE_TO',
+  TOGGLE_STATS: 'TOGGLE_STATS',
+  TOGGLE_FILTERS: 'TOGGLE_FILTERS',
+  CLEAR_FILTERS: 'CLEAR_FILTERS'
+};
+
+// Initial state
+const initialState = {
+  // Data state
+  comments: [],
+  issueKey: null,
+  total: 0,
+  hasMore: false,
+  hasLoadedMore: false,
+  
+  // Loading state
+  loading: true,
+  loadingMore: false,
+  error: null,
+  
+  // Sort state
+  sortOrder: 'created',
+  
+  // Filter state
+  searchTermInput: '',
+  searchTerm: '',
+  selectedAuthor: 'all',
+  dateFrom: null,
+  dateTo: null,
+  
+  // UI state
+  showStats: false,
+  showFilters: false
+};
+
+// Reducer function
+const commentsReducer = (state, action) => {
+  switch (action.type) {
+    case ACTIONS.SET_LOADING:
+      return { ...state, loading: action.payload };
+      
+    case ACTIONS.SET_LOADING_MORE:
+      return { ...state, loadingMore: action.payload };
+      
+    case ACTIONS.SET_COMMENTS:
+      return {
+        ...state,
+        comments: action.payload.comments,
+        total: action.payload.total,
+        hasMore: action.payload.hasMore,
+        loading: false,
+        error: null,
+        hasLoadedMore: false
+      };
+      
+    case ACTIONS.ADD_COMMENTS:
+      return {
+        ...state,
+        comments: [...state.comments, ...action.payload.comments],
+        total: action.payload.total,
+        hasMore: action.payload.hasMore,
+        loadingMore: false,
+        hasLoadedMore: true,
+        error: null
+      };
+      
+    case ACTIONS.SET_ERROR:
+      return {
+        ...state,
+        error: action.payload,
+        loading: false,
+        loadingMore: false,
+        comments: action.payload === 'Unable to get issue context' || action.payload === 'Failed to load issue context' ? [] : state.comments,
+        hasMore: action.payload.includes('Failed to load') ? false : state.hasMore
+      };
+      
+    case ACTIONS.SET_ISSUE_KEY:
+      return { ...state, issueKey: action.payload };
+      
+    case ACTIONS.SET_SORT_ORDER:
+      return { ...state, sortOrder: action.payload };
+      
+    case ACTIONS.SET_SEARCH_INPUT:
+      return { ...state, searchTermInput: action.payload };
+      
+    case ACTIONS.SET_SEARCH_TERM:
+      return { ...state, searchTerm: action.payload };
+      
+    case ACTIONS.SET_AUTHOR_FILTER:
+      return { ...state, selectedAuthor: action.payload };
+      
+    case ACTIONS.SET_DATE_FROM:
+      return { ...state, dateFrom: action.payload };
+      
+    case ACTIONS.SET_DATE_TO:
+      return { ...state, dateTo: action.payload };
+      
+    case ACTIONS.TOGGLE_STATS:
+      return { ...state, showStats: !state.showStats };
+      
+    case ACTIONS.TOGGLE_FILTERS:
+      return { ...state, showFilters: !state.showFilters };
+      
+    case ACTIONS.CLEAR_FILTERS:
+      return {
+        ...state,
+        searchTermInput: '',
+        searchTerm: '',
+        selectedAuthor: 'all',
+        dateFrom: null,
+        dateTo: null
+      };
+      
+    default:
+      return state;
+  }
+};
+
 const CommentsList = () => {
-  const [comments, setComments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [loadingMore, setLoadingMore] = useState(false);
-  const [sortOrder, setSortOrder] = useState('created'); // 'created' = oldest first, '-created' = newest first
-  const [issueKey, setIssueKey] = useState(null);
-  const [error, setError] = useState(null);
-  const [total, setTotal] = useState(0);
-  const [hasMore, setHasMore] = useState(false);
-  const [hasLoadedMore, setHasLoadedMore] = useState(false);
+  const [state, dispatch] = useReducer(commentsReducer, initialState);
   
-  // Filter and search states
-  const [searchTermInput, setSearchTermInput] = useState('');
-  const [searchTerm, setSearchTerm] = useState('');
-  const [selectedAuthor, setSelectedAuthor] = useState('all');
-  const [dateFrom, setDateFrom] = useState(null);
-  const [dateTo, setDateTo] = useState(null);
-  
-  // Collapsible panel states
-  const [showStats, setShowStats] = useState(false);
-  const [showFilters, setShowFilters] = useState(false);
+  // Destructure state for easier access
+  const {
+    comments, loading, loadingMore, sortOrder, issueKey, error, total, hasMore, hasLoadedMore,
+    searchTermInput, searchTerm, selectedAuthor, dateFrom, dateTo,
+    showStats, showFilters
+  } = state;
 
   // Debounce search input
   useEffect(() => {
     const timer = setTimeout(() => {
-      setSearchTerm(searchTermInput.trim());
+      dispatch({ type: ACTIONS.SET_SEARCH_TERM, payload: searchTermInput.trim() });
     }, 300);
 
     return () => clearTimeout(timer);
@@ -68,13 +187,13 @@ const CommentsList = () => {
       try {
         const contextResult = await invoke('getIssueContext');
         if (contextResult.success && contextResult.issueKey) {
-          setIssueKey(contextResult.issueKey);
+          dispatch({ type: ACTIONS.SET_ISSUE_KEY, payload: contextResult.issueKey });
         } else {
-          setError('Unable to get issue context');
+          dispatch({ type: ACTIONS.SET_ERROR, payload: 'Unable to get issue context' });
         }
       } catch (err) {
         console.error('Failed to get issue context:', err);
-        setError('Failed to load issue context');
+        dispatch({ type: ACTIONS.SET_ERROR, payload: 'Failed to load issue context' });
       }
     };
     getIssueContext();
@@ -85,8 +204,7 @@ const CommentsList = () => {
     if (!issueKey) return;
     
     const fetchComments = async () => {
-      setLoading(true);
-      setHasLoadedMore(false);
+      dispatch({ type: ACTIONS.SET_LOADING, payload: true });
       try {
         const result = await invoke('getIssueComments', { 
           issueKey, 
@@ -96,22 +214,20 @@ const CommentsList = () => {
         });
         
         if (result.success) {
-          setComments(result.comments || []);
-          setTotal(result.total || 0);
-          setHasMore(result.hasMore || false);
-          setError(null);
+          dispatch({ 
+            type: ACTIONS.SET_COMMENTS, 
+            payload: {
+              comments: result.comments || [],
+              total: result.total || 0,
+              hasMore: result.hasMore || false
+            }
+          });
         } else {
-          setError(result.error || 'Failed to load comments');
-          setComments([]);
-          setHasMore(false);
+          dispatch({ type: ACTIONS.SET_ERROR, payload: result.error || 'Failed to load comments' });
         }
       } catch (err) {
         console.error('Failed to fetch comments:', err);
-        setError('Failed to load comments');
-        setComments([]);
-        setHasMore(false);
-      } finally {
-        setLoading(false);
+        dispatch({ type: ACTIONS.SET_ERROR, payload: 'Failed to load comments' });
       }
     };
 
@@ -122,7 +238,7 @@ const CommentsList = () => {
   const loadMoreComments = async (loadAll = false) => {
     if (loadingMore) return;
     
-    setLoadingMore(true);
+    dispatch({ type: ACTIONS.SET_LOADING_MORE, payload: true });
     try {
       const requestParams = {
         issueKey,
@@ -139,24 +255,28 @@ const CommentsList = () => {
       const result = await invoke('getIssueComments', requestParams);
       
       if (result.success) {
-        setComments(prev => [...prev, ...(result.comments || [])]);
-        setTotal(result.total || total);
-        setHasMore(result.hasMore || false);
-        setHasLoadedMore(true);
-        setError(null);
+        dispatch({
+          type: ACTIONS.ADD_COMMENTS,
+          payload: {
+            comments: result.comments || [],
+            total: result.total || total,
+            hasMore: result.hasMore || false
+          }
+        });
       } else {
-        setError(result.error || 'Failed to load more comments');
+        dispatch({ type: ACTIONS.SET_ERROR, payload: result.error || 'Failed to load more comments' });
       }
     } catch (err) {
       console.error('Failed to load more comments:', err);
-      setError('Failed to load more comments');
-    } finally {
-      setLoadingMore(false);
+      dispatch({ type: ACTIONS.SET_ERROR, payload: 'Failed to load more comments' });
     }
   };
 
   const toggleSortOrder = () => {
-    setSortOrder(current => current === 'created' ? '-created' : 'created');
+    dispatch({ 
+      type: ACTIONS.SET_SORT_ORDER, 
+      payload: sortOrder === 'created' ? '-created' : 'created' 
+    });
   };
 
   const formatDate = (dateString) => {
@@ -307,7 +427,7 @@ const CommentsList = () => {
             <Heading size="small">Comment Statistics</Heading>
             <Button 
               appearance="subtle" 
-              onClick={() => setShowStats(!showStats)}
+              onClick={() => dispatch({ type: ACTIONS.TOGGLE_STATS })}
             >
               {showStats ? 'Hide' : 'Show'}
             </Button>
@@ -340,7 +460,7 @@ const CommentsList = () => {
             <Heading size="small">Search & Filter</Heading>
             <Button 
               appearance="subtle" 
-              onClick={() => setShowFilters(!showFilters)}
+              onClick={() => dispatch({ type: ACTIONS.TOGGLE_FILTERS })}
             >
               {showFilters ? 'Hide' : 'Show'}
             </Button>
@@ -358,7 +478,7 @@ const CommentsList = () => {
                 name="search"
                 placeholder="Search comments, authors, or content..."
                 value={searchTermInput}
-                onChange={(e) => setSearchTermInput(e.target.value)}
+                onChange={(e) => dispatch({ type: ACTIONS.SET_SEARCH_INPUT, payload: e.target.value })}
               />
               
               {/* Filter Controls */}
@@ -368,7 +488,7 @@ const CommentsList = () => {
                   <Text size="small"><Strong>Author</Strong></Text>
                   <Select
                     value={selectedAuthor}
-                    onChange={(e) => setSelectedAuthor(e.target.value)}
+                    onChange={(e) => dispatch({ type: ACTIONS.SET_AUTHOR_FILTER, payload: e.target.value })}
                   >
                     <option value="all">All authors</option>
                     {authors.map(author => (
@@ -384,7 +504,7 @@ const CommentsList = () => {
                   <Text size="small"><Strong>From Date</Strong></Text>
                   <DatePicker
                     value={dateFrom}
-                    onChange={(date) => setDateFrom(date)}
+                    onChange={(date) => dispatch({ type: ACTIONS.SET_DATE_FROM, payload: date })}
                   />
                 </Stack>
                 
@@ -392,20 +512,14 @@ const CommentsList = () => {
                   <Text size="small"><Strong>To Date</Strong></Text>
                   <DatePicker
                     value={dateTo}
-                    onChange={(date) => setDateTo(date)}
+                    onChange={(date) => dispatch({ type: ACTIONS.SET_DATE_TO, payload: date })}
                   />
                 </Stack>
 
                 {/* Clear Filters */}
                 <Button
                   appearance="subtle"
-                  onClick={() => {
-                    setSearchTermInput('');
-                    setSearchTerm('');
-                    setSelectedAuthor('all');
-                    setDateFrom(null);
-                    setDateTo(null);
-                  }}
+                  onClick={() => dispatch({ type: ACTIONS.CLEAR_FILTERS })}
                 >
                   Clear All
                 </Button>
@@ -424,13 +538,13 @@ const CommentsList = () => {
           <ButtonGroup>
             <Button 
               appearance={sortOrder === 'created' ? 'primary' : 'default'}
-              onClick={() => setSortOrder('created')}
+              onClick={() => dispatch({ type: ACTIONS.SET_SORT_ORDER, payload: 'created' })}
             >
               Oldest First
             </Button>
             <Button 
               appearance={sortOrder === '-created' ? 'primary' : 'default'}
-              onClick={() => setSortOrder('-created')}
+              onClick={() => dispatch({ type: ACTIONS.SET_SORT_ORDER, payload: '-created' })}
             >
               Newest First
             </Button>
