@@ -15,6 +15,7 @@ import ForgeReconciler, {
   Select,
   DatePicker,
   Heading,
+  AdfRenderer,
   xcss
 } from '@forge/react';
 import { invoke } from '@forge/bridge';
@@ -146,75 +147,6 @@ const CommentsList = () => {
     return text.trim();
   };
 
-  const formatTextWithFormatting = (adfContent) => {
-    if (!adfContent || !adfContent.content) return null;
-    
-    let elements = [];
-    let key = 0;
-    
-    const processNode = (node) => {
-      if (node.type === 'text') {
-        let text = node.text || '';
-        
-        // Highlight search terms
-        if (searchTerm && text.toLowerCase().includes(searchTerm.toLowerCase())) {
-          const regex = new RegExp(`(${searchTerm.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi');
-          const parts = text.split(regex);
-          const highlightedParts = parts.map((part, index) => {
-            if (part.toLowerCase() === searchTerm.toLowerCase()) {
-              return <Strong key={`${key++}-${index}`}>{part}</Strong>;
-            }
-            return <Text key={`${key++}-${index}`}>{part}</Text>;
-          });
-          
-          // Apply text formatting to highlighted parts
-          if (node.marks && node.marks.length > 0) {
-            return node.marks.reduce((acc, mark) => {
-              if (mark.type === 'strong') {
-                return <Strong key={key++}>{acc}</Strong>;
-              } else if (mark.type === 'em') {
-                return <Text key={key++} appearance="subtle">{acc}</Text>;
-              } else if (mark.type === 'code') {
-                return <Text key={key++} appearance="subtle">{acc}</Text>;
-              }
-              return acc;
-            }, <>{highlightedParts}</>);
-          }
-          return <>{highlightedParts}</>;
-        }
-        
-        // Apply text formatting without highlighting
-        let formattedText = text;
-        if (node.marks) {
-          formattedText = node.marks.reduce((acc, mark) => {
-            if (mark.type === 'strong') {
-              return <Strong key={key++}>{acc}</Strong>;
-            } else if (mark.type === 'em') {
-              return <Text key={key++} appearance="subtle">{acc}</Text>;
-            } else if (mark.type === 'code') {
-              return <Text key={key++} appearance="subtle">{acc}</Text>;
-            }
-            return acc;
-          }, text);
-        }
-        
-        return formattedText;
-      } else if (node.type === 'hardBreak') {
-        return <Text key={key++}>{'\n'}</Text>;
-      } else if (node.type === 'paragraph') {
-        if (node.content) {
-          const content = node.content.map(processNode).flat();
-          elements.push(<Text key={key++}>{content}</Text>);
-        }
-      } else if (node.content) {
-        return node.content.map(processNode).flat();
-      }
-      return null;
-    };
-    
-    adfContent.content.forEach(processNode);
-    return elements.length > 0 ? elements : null;
-  };
 
   // Get unique authors for filter dropdown
   const authors = useMemo(() => {
@@ -468,9 +400,11 @@ const CommentsList = () => {
             <Text>added a comment - {formatDate(comment.created)}</Text>
           </Inline>
 
-          {/* Comment content with formatting and search highlighting */}
+          {/* Comment content with ADF rendering */}
           <Box>
-            {formatTextWithFormatting(comment.body) || (
+            {comment.body && comment.body.content ? (
+              <AdfRenderer document={comment.body} />
+            ) : (
               <Text>{extractTextFromAdf(comment.body) || 'No content'}</Text>
             )}
           </Box>
