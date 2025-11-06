@@ -33,10 +33,13 @@ const cardStyle = xcss({
 const CommentsList = () => {
   const [comments, setComments] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [sortOrder, setSortOrder] = useState('created'); // 'created' = oldest first, '-created' = newest first
   const [issueKey, setIssueKey] = useState(null);
   const [error, setError] = useState(null);
   const [total, setTotal] = useState(0);
+  const [hasMore, setHasMore] = useState(false);
+  const [hasLoadedMore, setHasLoadedMore] = useState(false);
   
   // Filter and search states
   const [searchTermInput, setSearchTermInput] = useState('');
@@ -58,6 +61,7 @@ const CommentsList = () => {
     return () => clearTimeout(timer);
   }, [searchTermInput]);
 
+
   // Get issue context on component mount
   useEffect(() => {
     const getIssueContext = async () => {
@@ -76,30 +80,36 @@ const CommentsList = () => {
     getIssueContext();
   }, []);
 
-  // Fetch comments when issue key or sort order changes
+  // Fetch initial comments when issue key or sort order changes
   useEffect(() => {
     if (!issueKey) return;
     
     const fetchComments = async () => {
       setLoading(true);
+      setHasLoadedMore(false);
       try {
         const result = await invoke('getIssueComments', { 
           issueKey, 
-          sortOrder 
+          sortOrder,
+          startAt: 0,
+          maxResults: 20
         });
         
         if (result.success) {
           setComments(result.comments || []);
           setTotal(result.total || 0);
+          setHasMore(result.hasMore || false);
           setError(null);
         } else {
           setError(result.error || 'Failed to load comments');
           setComments([]);
+          setHasMore(false);
         }
       } catch (err) {
         console.error('Failed to fetch comments:', err);
         setError('Failed to load comments');
         setComments([]);
+        setHasMore(false);
       } finally {
         setLoading(false);
       }
@@ -107,6 +117,43 @@ const CommentsList = () => {
 
     fetchComments();
   }, [issueKey, sortOrder]);
+
+  // Load more comments
+  const loadMoreComments = async (loadAll = false) => {
+    if (loadingMore) return;
+    
+    setLoadingMore(true);
+    try {
+      const requestParams = {
+        issueKey,
+        sortOrder,
+        startAt: comments.length,
+        loadAll: loadAll
+      };
+      
+      if (!loadAll) {
+        requestParams.maxResults = 100;
+      }
+      
+      console.log('Request params:', requestParams);
+      const result = await invoke('getIssueComments', requestParams);
+      
+      if (result.success) {
+        setComments(prev => [...prev, ...(result.comments || [])]);
+        setTotal(result.total || total);
+        setHasMore(result.hasMore || false);
+        setHasLoadedMore(true);
+        setError(null);
+      } else {
+        setError(result.error || 'Failed to load more comments');
+      }
+    } catch (err) {
+      console.error('Failed to load more comments:', err);
+      setError('Failed to load more comments');
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const toggleSortOrder = () => {
     setSortOrder(current => current === 'created' ? '-created' : 'created');
@@ -422,6 +469,28 @@ const CommentsList = () => {
           )}
         </Stack>
       ))}
+
+      {/* Load more buttons */}
+      {hasMore && (
+        <Box>
+          <ButtonGroup>
+            <Button
+              onClick={() => loadMoreComments(false)}
+              appearance="default"
+              isLoading={loadingMore}
+            >
+              {loadingMore ? 'Loading...' : 'Load more comments'}
+            </Button>
+            <Button
+              onClick={() => loadMoreComments(true)}
+              appearance="primary"
+              isLoading={loadingMore}
+            >
+              {loadingMore ? 'Loading...' : 'Load ALL remaining'}
+            </Button>
+          </ButtonGroup>
+        </Box>
+      )}
 
     </Stack>
   );
