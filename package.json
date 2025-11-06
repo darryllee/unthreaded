@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "A Jira Forge app that provides an enhanced, unthreaded view of issue comments with advanced filtering, search, and analytics capabilities",
   "main": "src/index.js",
+  "license": "SEE LICENSE IN /LICENSE",
   "scripts": {
     "build": "forge build",
     "deploy": "forge deploy",
