@@ -36,17 +36,12 @@ Written by [Rovo Dev CLI](https://community.atlassian.com/forums/Rovo-for-Softwa
    forge register 'Unthreaded Comments'
    ```
 
-3. Build the app:
-   ```bash
-   forge build
-   ```
-
-4. Deploy the app:
+3. Deploy the app:
    ```bash
    forge deploy
    ```
 
-5. Install the app to your Jira site:
+4. Install the app to your Jira site:
    ```bash
    forge install
    ```

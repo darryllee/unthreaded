@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "A hacky Jira Forge app that provides an unthreaded view of issue comments.",
   "main": "src/index.js",
+  "license": "SEE LICENSE IN /LICENSE",
   "scripts": {
     "build": "forge build",
     "deploy": "forge deploy",
