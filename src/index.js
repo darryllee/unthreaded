@@ -5,64 +5,85 @@ const resolver = new Resolver();
 
 // Get issue comments with chronological sorting
 resolver.define('getIssueComments', async (req) => {
-  const { issueKey, sortOrder = 'created' } = req.payload;
+  const { issueKey, sortOrder = 'created', startAt = 0, maxResults = 100, loadAll = false } = req.payload;
   
   // Input validation
-  if (!issueKey || typeof issueKey !== 'string' || issueKey.trim() === '') {
+  if (!issueKey || typeof issueKey !== 'string') {
     return {
       success: false,
-      error: 'Invalid issueKey: must be a non-empty string',
+      error: 'Invalid issue key provided',
       comments: [],
-      total: 0
+      total: 0,
+      hasMore: false
     };
   }
   
   try {
-    // Fetch all comments with pagination (handles 100+ comments)
-    let allComments = [];
-    let startAt = 0;
-    const maxResults = 100;
-    let hasMore = true;
+    const allComments = [];
+    let currentStartAt = startAt;
+    const pageSize = maxResults;
+    let total = 0;
+    let hasMore = false;
     
-    while (hasMore) {
-      const response = await api.asApp().requestJira(
-        route`/rest/api/3/issue/${issueKey}/comment?orderBy=${sortOrder}&expand=renderedBody&startAt=${startAt}&maxResults=${maxResults}`
-      );
+    // If loadAll is true, fetch all remaining comments
+    if (loadAll) {
+      let fetchingMore = true;
+      while (fetchingMore) {
+        const url = route`/rest/api/3/issue/${issueKey}/comment?orderBy=${sortOrder}&expand=renderedBody&startAt=${currentStartAt}&maxResults=${100}`;
+        const response = await api.asApp().requestJira(url);
+        
+        // Check HTTP status
+        if (!response.ok) {
+          const errorText = await response.text().catch(() => 'Unknown error');
+          throw new Error(`Jira API returned ${response.status}: ${errorText}`);
+        }
+        
+        const data = await response.json();
+        const pageComments = data.comments || [];
+        allComments.push(...pageComments);
+        
+        total = data.total || allComments.length;
+        
+        // Check if we've fetched all comments
+        if (allComments.length >= total || pageComments.length < 100) {
+          fetchingMore = false;
+        } else {
+          currentStartAt += 100;
+        }
+      }
+    } else {
+      // Fetch a single page
+      const url = route`/rest/api/3/issue/${issueKey}/comment?orderBy=${sortOrder}&expand=renderedBody&startAt=${currentStartAt}&maxResults=${pageSize}`;
+      const response = await api.asApp().requestJira(url);
       
-      // HTTP status check
+      // Check HTTP status
       if (!response.ok) {
-        const errorText = await response.text();
-        return {
-          success: false,
-          error: `HTTP ${response.status}: ${errorText || response.statusText}`,
-          comments: [],
-          total: 0
-        };
+        const errorText = await response.text().catch(() => 'Unknown error');
+        throw new Error(`Jira API returned ${response.status}: ${errorText}`);
       }
       
       const data = await response.json();
-      const comments = data.comments || [];
-      allComments = allComments.concat(comments);
+      const pageComments = data.comments || [];
+      allComments.push(...pageComments);
       
-      // Check if there are more comments to fetch
-      hasMore = comments.length === maxResults && allComments.length < (data.total || 0);
-      startAt += maxResults;
+      total = data.total || 0;
+      hasMore = allComments.length < total;
     }
     
     return {
       success: true,
       comments: allComments,
-      total: allComments.length
+      total: total,
+      hasMore: loadAll ? false : allComments.length < total
     };
   } catch (error) {
     console.error('Error fetching comments:', error);
-    const errorMessage = error.message || 'Unknown error occurred';
-    const statusCode = error.statusCode || error.status || 'N/A';
     return {
       success: false,
-      error: `Error (${statusCode}): ${errorMessage}`,
+      error: error.message || 'Failed to fetch comments',
       comments: [],
-      total: 0
+      total: 0,
+      hasMore: false
     };
   }
 });
