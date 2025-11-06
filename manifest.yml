@@ -1,6 +1,6 @@
 modules:
   jira:issueActivity:
-    - key: hello-world-activity
+    - key: unthreaded-comments
       resource: main
       render: native
       resolver:
